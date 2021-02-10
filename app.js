@@ -16,6 +16,27 @@ const app = express();
 // require database configuration
 require('./configs/db.config');
 
+// session configuration
+const session = require('express-session');
+// session store using mongo
+const MongoStore = require('connect-mongo')(session)
+
+//const mongoose = require('./db/index');
+
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        cookie: { maxAge: 1000 * 60 * 60 * 24 },
+        saveUninitialized: false,
+        //Forces the session to be saved back to the session store, 
+        // even if the session was never modified during the request.
+        resave: true,
+        store: new MongoStore({
+            mongooseConnection: mongoose.connection
+        })
+    })
+)
+
 // Middleware Setup
 app.use(logger('dev'));
 app.use(express.json());
@@ -33,5 +54,11 @@ app.locals.title = 'Express - Generated with IronGenerator';
 
 const index = require('./routes/index.routes');
 app.use('/', index);
+
+const auth = require('./routes/auth.routes');
+app.use('/', auth);
+
+
+
 
 module.exports = app;
