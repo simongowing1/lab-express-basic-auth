@@ -2,6 +2,10 @@ const router = require("express").Router();
 const User = require('../models/User.model');
 const bcrypt = require('bcrypt');
 
+router.get("/", (req, res, next) => {
+    res.render("../views/index")
+})
+
 router.get("/signup", (req, res, next) => {
     res.render("../views/signup");
   });
@@ -22,17 +26,25 @@ router.post("/login", (req, res) => {
             if (bcrypt.compareSync(password, userFromDB.password)) {
                 console.log(req.session)
                 req.session.user = userFromDB;
-                res.redirect("/profile");
+                res.redirect("/private");
             } else {
-                res.render('login,', { message: 'Invalid credentials'});
+                res.render('login', { message: 'Invalid credentials'});
             }
 
         })
 })
 
-router.get("/profile", (req, res, next) => {
-    res.render("../views/profile");
+router.get("/private", (req, res, next) => {
+    //if () {
+        res.render("../views/private");
+   // } else {
+    //    res.render('login', { message: 'Invalid credentials'});
+    //}
   });
+
+router.get("/main", (req, res, next) => {
+    res.render("../views/main")
+})
 
 router.post('/signup', (req, res) => {
     const { username, password } = req.body;
@@ -45,5 +57,7 @@ router.post('/signup', (req, res) => {
         res.redirect('/')
     })
 })
+
+
 
 module.exports = router
