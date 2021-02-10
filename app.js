@@ -13,6 +13,9 @@ const debug = require('debug')(`${app_name}:${path.basename(__filename).split('.
 
 const app = express();
 
+const passport = require('passport');
+const LocalStrategy = require('passport-local').Strategy;
+
 // require database configuration
 require('./configs/db.config');
 
@@ -37,11 +40,61 @@ app.use(
     })
 )
 
+// passport configuration
+const User = require('./models/User.model');
+
+const bcrypt = require('bcrypt');
+
+// we serialize only the `_id` field of the user to keep the information stored minimum
+passport.serializeUser((user, done) => {
+  done(null, user._id);
+});
+
+// when we need the information for the user, the deserializeUser function is called with the id that we previously serialized to fetch the user from the database
+passport.deserializeUser((id, done) => {
+  User.findById(id)
+    .then(dbUser => {
+      done(null, dbUser);
+    })
+    .catch(err => {
+      done(err);
+    });
+});
+
+passport.use(
+  new LocalStrategy((username, password, done) => {
+    // login
+    User.findOne({ username: username })
+      .then(userFromDB => {
+        if (userFromDB === null) {
+          // there is no user with this username
+          done(null, false, { message: 'Wrong Credentials' });
+        } else if (!bcrypt.compareSync(password, userFromDB.password)) {
+          // the password is not matching
+          done(null, false, { message: 'Wrong Credentials' });
+        } else {
+          // the userFromDB should now be logged in
+          done(null, userFromDB)
+        }
+      })
+      .catch(err => {
+        console.log(err);
+      })
+  })
+)
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+// end of passport
+
 // Middleware Setup
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Express View engine setup
 app.set('views', path.join(__dirname, 'views'));
